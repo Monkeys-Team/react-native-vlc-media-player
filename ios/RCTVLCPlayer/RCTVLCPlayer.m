@@ -127,17 +127,20 @@ static NSString *const playbackRate = @"rate";
     // [bavv edit start]
     NSString* uri    = [source objectForKey:@"uri"];
     BOOL    autoplay = [RCTConvert BOOL:[source objectForKey:@"autoplay"]];
+    float seek = [RCTConvert BOOL:[source objectForKey:@"seek"]];
+    
     NSURL* _uri    = [NSURL URLWithString:uri];
     NSDictionary* initOptions = [source objectForKey:@"initOptions"];
 
     _player = [[VLCMediaPlayer alloc] init];
-    _player.libraryInstance.debugLogging = true;
-    _player.libraryInstance.debugLoggingLevel = 3;
+    //_player.libraryInstance.debugLogging = true;
+    //_player.libraryInstance.debugLoggingLevel = 3;
     // [bavv edit end]
 
     [_player setDrawable:self];
     _player.delegate = self;
     _player.scaleFactor = 0;
+    // _player.position = seek;
 
     VLCMedia *media = [VLCMedia mediaWithURL:_uri];
 
@@ -147,12 +150,17 @@ static NSString *const playbackRate = @"rate";
 
     _player.media = media;
     [[AVAudioSession sharedInstance] setActive:NO withOptions:AVAudioSessionSetActiveOptionNotifyOthersOnDeactivation error:nil];
-    NSLog(@"autoplay: %i",autoplay);
     self.onVideoLoadStart(@{
                            @"target": self.reactTag
                            });
 //    if(autoplay)
-        [self play];
+    [self play];
+}
+
+- (void)setSubtitleFontScale:(float) fontScale {
+    if(_player){
+        [_player setCurrentSubTitleFontScale:fontScale];
+    }
 }
 
 - (void)onVideoTracks {
@@ -172,6 +180,7 @@ static NSString *const playbackRate = @"rate";
 
 - (void)onSubtitles {
     if(_player){
+        NSArray *new_obj = [_player textTracks];
         NSArray *subtitleNames = [_player videoSubTitlesNames];
         NSArray *subtitleIndexes = [_player videoSubTitlesIndexes];
         int currentSubtitleIndex = [_player currentVideoSubTitleIndex];
@@ -194,6 +203,20 @@ static NSString *const playbackRate = @"rate";
 
 - (void)mediaPlayerStateChanged:(NSNotification *)aNotification
 {
+    
+    /**
+     
+     VLCMediaPlayerStateStopped,        ///< Player has stopped
+     VLCMediaPlayerStateStopping,       ///< Player is stopping
+     VLCMediaPlayerStateOpening,        ///< Stream is opening
+     VLCMediaPlayerStateBuffering,      ///< Stream is buffering
+     VLCMediaPlayerStateError,          ///< Player has generated an error
+     VLCMediaPlayerStatePlaying,        ///< Stream is playing
+     VLCMediaPlayerStatePaused,         ///< Stream is paused
+     VLCMediaPlayerStateESAdded,        ///< Elementary Stream added
+     VLCMediaPlayerStateESDeleted,      ///< Elementary Stream deleted
+     VLCMediaPlayerStateLengthChanged   ///< Length changed
+     */
 
      NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
      NSLog(@"userInfo %@",[aNotification userInfo]);
@@ -236,20 +259,6 @@ static NSString *const playbackRate = @"rate";
                                       @"seekable": [NSNumber numberWithBool:[_player isSeekable]],
                                       @"duration":[NSNumber numberWithInt:[_player.media.length intValue]]
                                       });
-                break;
-            case VLCMediaPlayerStateEnded:
-                NSLog(@"VLCMediaPlayerStateEnded %i",1);
-                int currentTime   = [[_player time] intValue];
-                int remainingTime = [[_player remainingTime] intValue];
-                int duration      = [_player.media.length intValue];
-
-                self.onVideoEnded(@{
-                                    @"target": self.reactTag,
-                                    @"currentTime": [NSNumber numberWithInt:currentTime],
-                                    @"remainingTime": [NSNumber numberWithInt:remainingTime],
-                                    @"duration":[NSNumber numberWithInt:duration],
-                                    @"position":[NSNumber numberWithFloat:_player.position]
-                                    });
                 break;
             case VLCMediaPlayerStateError:
                 NSLog(@"VLCMediaPlayerStateError %i",1);

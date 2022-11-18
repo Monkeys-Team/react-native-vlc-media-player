@@ -24,6 +24,7 @@ export default class VLCPlayer extends Component {
     this.subtitleIndex = this.subtitleIndex.bind(this);
     this.trackIndex = this.trackIndex.bind(this);
     this._onPlaying = this._onPlaying.bind(this);
+    this.subtitleFontScale = this.subtitleFontScale.bind(this);
     this._onStopped = this._onStopped.bind(this);
     this._onPaused = this._onPaused.bind(this);
     this._onBuffering = this._onBuffering.bind(this);
@@ -53,7 +54,9 @@ export default class VLCPlayer extends Component {
 
 
   setNativeProps(nativeProps) {
-    this._root.setNativeProps(nativeProps);
+    if(this._root){
+      this._root.setNativeProps(nativeProps);
+    }
   }
 
   setVideoSubtitleSlave(videoSubtitleSlave) {
@@ -77,6 +80,10 @@ export default class VLCPlayer extends Component {
 
   resume(isResume) {
     this.setNativeProps({ resume: isResume });
+  }
+
+  subtitleFontScale(subtitleFontScale){
+    this.setNativeProps({subtitleFontScale});
   }
 
   subtitle(subtitle) {
