@@ -15,7 +15,6 @@ import {
   Platform,
 } from 'react-native';
 import VLCPlayer from '../VLCPlayer';
-import PropTypes from 'prop-types';
 import TimeLimt from './TimeLimit';
 import ControlBtn from './ControlBtn';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
@@ -24,10 +23,7 @@ const statusBarHeight = getStatusBarHeight();
 let deviceHeight = Dimensions.get('window').height;
 let deviceWidth = Dimensions.get('window').width;
 export default class VLCPlayerView extends Component {
-  static propTypes = {
-    uri: PropTypes.string,
-  };
-
+  
   constructor(props) {
     super(props);
     this.state = {
@@ -270,9 +266,9 @@ export default class VLCPlayerView extends Component {
   }
 
   /**
-   * 视屏播放
-   * @param event
-   */
+  * 视屏播放
+  * @param event
+  */
   onPlaying(event) {
     this.isEnding = false;
     // if (this.state.paused) {
@@ -282,9 +278,9 @@ export default class VLCPlayerView extends Component {
   }
 
   /**
-   * 视屏停止
-   * @param event
-   */
+  * 视屏停止
+  * @param event
+  */
   onPaused(event) {
     // if (!this.state.paused) {
     //   this.setState({ paused: true, showControls: true });
@@ -295,9 +291,9 @@ export default class VLCPlayerView extends Component {
   }
 
   /**
-   * 视屏缓冲
-   * @param event
-   */
+  * 视屏缓冲
+  * @param event
+  */
   onBuffering(event) {
     this.setState({
       isLoading: true,
@@ -391,18 +387,18 @@ export default class VLCPlayerView extends Component {
   };
 
   /**
-   * 视屏进度变化
-   * @param event
-   */
+  * 视屏进度变化
+  * @param event
+  */
   onProgress(event) {
     /* console.log(
-     'position=' +
-     event.position +
-     ',currentTime=' +
-     event.currentTime +
-     ',remainingTime=' +
-     event.remainingTime,
-     );*/
+    'position=' +
+    event.position +
+    ',currentTime=' +
+    event.currentTime +
+    ',remainingTime=' +
+    event.remainingTime,
+    );*/
     let currentTime = event.currentTime;
     let loadingSuccess = false;
     if (currentTime > 0 || this.state.currentTime > 0) {
@@ -424,9 +420,9 @@ export default class VLCPlayerView extends Component {
   }
 
   /**
-   * 视屏播放结束
-   * @param event
-   */
+  * 视屏播放结束
+  * @param event
+  */
   onEnded(event) {
     console.log('onEnded ---------->')
     console.log(event)
@@ -457,7 +453,7 @@ export default class VLCPlayerView extends Component {
       );
     } else {
       /* console.log('onEnded   error:'+this.props.uri);
-       this.vlcPlayer.resume && this.vlcPlayer.resume(false);*/
+      this.vlcPlayer.resume && this.vlcPlayer.resume(false);*/
       /*this.setState({
         paused: true,
       },()=>{
@@ -475,9 +471,9 @@ export default class VLCPlayerView extends Component {
   }
 
   /**
-   * 全屏
-   * @private
-   */
+  * 全屏
+  * @private
+  */
   _toFullScreen = () => {
     let { startFullScreen, closeFullScreen, isFull } = this.props;
     if (isFull) {
@@ -488,9 +484,9 @@ export default class VLCPlayerView extends Component {
   };
 
   /**
-   * 播放/停止
-   * @private
-   */
+  * 播放/停止
+  * @private
+  */
   _play = () => {
     this.setState({ paused: !this.state.paused });
   };

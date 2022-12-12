@@ -50,26 +50,26 @@ if (deviceHeight >= 812) {
   IS_IPHONEX = true;
 }
 /**
- * 返回状态栏高度
- */
+* 返回状态栏高度
+*/
 export function getStatusBarHeight() {
   return statusBarHeight;
 }
 /**
- * 返回导航栏高度
- */
+* 返回导航栏高度
+*/
 export function getTopBarHeight() {
   return topBarHeight;
 }
 /**
- * 返回标签栏高度
- */
+* 返回标签栏高度
+*/
 export function getTabBarHeight() {
   return tabBarHeight;
 }
 /**
- *
- */
+*
+*/
 export function getTopHeight() {
   if (Platform.OS === 'ios') {
     return topBarHeight + statusBarHeight;
@@ -78,8 +78,8 @@ export function getTopHeight() {
   }
 }
 /**
- * 返回变更比例
- */
+* 返回变更比例
+*/
 export function getChangeRatio() {
   return changeRatio;
 }
@@ -89,8 +89,8 @@ export function getTabBarRatio() {
 }
 
 /**
- * 获取TopBar比例
- */
+* 获取TopBar比例
+*/
 export function getTopBarRatio() {
   return changeRatio;
 }

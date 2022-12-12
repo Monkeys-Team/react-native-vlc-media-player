@@ -15,7 +15,6 @@ import {
 } from 'react-native';
 
 import VLCPlayerView from './VLCPlayerView';
-import PropTypes from 'prop-types';
 import { getStatusBarHeight } from './SizeController';
 const statusBarHeight = getStatusBarHeight();
 const _fullKey = 'commonVideo_android_fullKey';
@@ -50,46 +49,6 @@ export default class CommonVideo extends Component {
     url: '',
     showBack: false,
     showTitle: false,
-  };
-
-  static propTypes = {
-    /**
-     * 视频播放结束
-     */
-    onEnd: PropTypes.func,
-
-    /**
-     * 广告头播放结束
-     */
-    onGGEnd: PropTypes.func,
-    /**
-     * 开启全屏
-     */
-    startFullScreen: PropTypes.func,
-    /**
-     * 关闭全屏
-     */
-    closeFullScreen: PropTypes.func,
-    /**
-     * 返回按钮点击事件
-     */
-    onLeftPress: PropTypes.func,
-    /**
-     * 标题
-     */
-    title: PropTypes.string,
-    /**
-     * 是否显示返回按钮
-     */
-    showBack: PropTypes.bool,
-    /**
-     * 是否显示标题
-     */
-    showTitle: PropTypes.bool,
-
-    onGoLivePress: PropTypes.func,
-
-    onReplayPress: PropTypes.func,
   };
 
   static getDerivedStateFromProps(nextProps, preState) {

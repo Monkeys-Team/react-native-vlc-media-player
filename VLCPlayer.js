@@ -3,8 +3,6 @@ import ReactNative from "react-native";
 
 const { Component } = React;
 
-import PropTypes from "prop-types";
-
 const { StyleSheet, requireNativeComponent, NativeModules, View } = ReactNative;
 import resolveAssetSource from "react-native/Libraries/Image/resolveAssetSource";
 
@@ -221,61 +219,6 @@ export default class VLCPlayer extends Component {
   }
 }
 
-VLCPlayer.propTypes = {
-  /* Native only */
-  rate: PropTypes.number,
-  seek: PropTypes.number,
-  resume: PropTypes.bool,
-  snapshotPath: PropTypes.string,
-  paused: PropTypes.bool,
-
-  autoAspectRatio: PropTypes.bool,
-  videoAspectRatio: PropTypes.string,
-  volume: PropTypes.number,
-  disableFocus: PropTypes.bool,
-  src: PropTypes.string,
-  playInBackground: PropTypes.bool,
-  playWhenInactive: PropTypes.bool,
-  resizeMode: PropTypes.string,
-  poster: PropTypes.string,
-  repeat: PropTypes.bool,
-  muted: PropTypes.bool,
-  subtitle: PropTypes.string,
-  currentAudioTrackIndex: PropTypes.number,
-  currentVideoSubTitleIndex: PropTypes.number,
-
-  onVideoLoadStart: PropTypes.func,
-  onVideoError: PropTypes.func,
-  onVideoProgress: PropTypes.func,
-  onVideoEnded: PropTypes.func,
-  onVideoPlaying: PropTypes.func,
-  onVideoPaused: PropTypes.func,
-  onVideoStopped: PropTypes.func,
-  onVideoBuffering: PropTypes.func,
-  onVideoOpen: PropTypes.func,
-  onVideoAudioTracks: PropTypes.func,
-  onVideoSubtitles: PropTypes.func,
-
-  /* Wrapper component */
-  source: PropTypes.oneOfType([PropTypes.object, PropTypes.number]),
-
-  onError: PropTypes.func,
-  onProgress: PropTypes.func,
-  onEnded: PropTypes.func,
-  onStopped: PropTypes.func,
-  onPlaying: PropTypes.func,
-  onPaused: PropTypes.func,
-  onAudioTracks: PropTypes.func,
-  onSubtitles: PropTypes.func,
-
-  /* Required by react-native */
-  scaleX: PropTypes.number,
-  scaleY: PropTypes.number,
-  translateX: PropTypes.number,
-  translateY: PropTypes.number,
-  rotation: PropTypes.number,
-  ...View.propTypes,
-};
 
 const styles = StyleSheet.create({
   base: {
