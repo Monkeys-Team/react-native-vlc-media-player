@@ -12,7 +12,7 @@ import {
   StatusBar,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
-import Slider from 'react-native-slider';
+import Slider from '@react-native-community/slider';
 import TimeLimt from './TimeLimit';
 
 export default class ControlBtn extends Component {

@@ -31,7 +31,7 @@
   },
   "bundleDependencies": false,
   "dependencies": {
-    "react-native-slider": "^0.11.0",
+    "@react-native-community/slider": "^4.5.2",
     "react-native-vector-icons": "^6.6.0"
   },
   "deprecated": false,
