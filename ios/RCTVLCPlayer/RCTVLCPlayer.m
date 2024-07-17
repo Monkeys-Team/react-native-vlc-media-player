@@ -97,10 +97,12 @@ static NSString *const playbackRate = @"rate";
     NSString* uri    = [_source objectForKey:@"uri"];
     NSURL* _uri    = [NSURL URLWithString:uri];
     NSDictionary* initOptions = [_source objectForKey:@"initOptions"];
+    NSNumber* fontSize    = [_source objectForKey:@"fontSize"];
 
     _player = [[VLCMediaPlayer alloc] init];
 	// [bavv edit end]
 
+    [_player performSelector:@selector(setTextRendererFontSize:) withObject:fontSize];    
     [_player setDrawable:self];
     _player.delegate = self;
     _player.scaleFactor = 0;
@@ -126,6 +128,7 @@ static NSString *const playbackRate = @"rate";
     _source = source;
     // [bavv edit start]
     NSString* uri    = [source objectForKey:@"uri"];
+    NSInteger* fontSize    = [source objectForKey:@"fontSize"];
     BOOL    autoplay = [RCTConvert BOOL:[source objectForKey:@"autoplay"]];
     NSURL* _uri    = [NSURL URLWithString:uri];
     NSDictionary* initOptions = [source objectForKey:@"initOptions"];
@@ -135,6 +138,7 @@ static NSString *const playbackRate = @"rate";
     _player.libraryInstance.debugLoggingLevel = 3;
     // [bavv edit end]
 
+    [_player performSelector:@selector(setTextRendererFontSize:) withObject:fontSize];    
     [_player setDrawable:self];
     _player.delegate = self;
     _player.scaleFactor = 0;
@@ -147,7 +151,7 @@ static NSString *const playbackRate = @"rate";
 
     _player.media = media;
     [[AVAudioSession sharedInstance] setActive:NO withOptions:AVAudioSessionSetActiveOptionNotifyOthersOnDeactivation error:nil];
-    NSLog(@"autoplay: %i",autoplay);
+    
     self.onVideoLoadStart(@{
                            @"target": self.reactTag
                            });
