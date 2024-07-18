@@ -17,11 +17,13 @@ import com.facebook.react.bridge.Arguments;
 import com.facebook.react.bridge.LifecycleEventListener;
 import com.facebook.react.bridge.ReadableArray;
 import com.facebook.react.bridge.ReadableMap;
-import com.facebook.react.bridge.WritableArray;
 import com.facebook.react.bridge.WritableMap;
+import com.facebook.react.bridge.WritableNativeArray;
+import com.facebook.react.bridge.WritableArray;
+
 import com.facebook.react.uimanager.ThemedReactContext;
 
-import org.videolan.libvlc.IVLCVout;
+import org.videolan.libvlc.interfaces.IVLCVout;
 import org.videolan.libvlc.LibVLC;
 import org.videolan.libvlc.Media;
 import org.videolan.libvlc.MediaPlayer;
@@ -147,31 +149,36 @@ class ReactVlcPlayerView extends TextureView implements
     }
 
     private void setProgressUpdateRunnable() {
-        if (mMediaPlayer != null){
-            mProgressUpdateRunnable = new Runnable() {
+        if (mMediaPlayer != null && mProgressUpdateInterval > 0){
+            new Thread() {
                 @Override
                 public void run() {
-                    if (mMediaPlayer != null && !isPaused) {
-                        long currentTime = 0;
-                        long totalLength = 0;
-                        WritableMap event = Arguments.createMap();
-                        boolean isPlaying = mMediaPlayer.isPlaying();
-                        currentTime = mMediaPlayer.getTime();
-                        float position = mMediaPlayer.getPosition();
-                        totalLength = mMediaPlayer.getLength();
-                        WritableMap map = Arguments.createMap();
-                        map.putBoolean("isPlaying", isPlaying);
-                        map.putDouble("position", position);
-                        map.putDouble("currentTime", currentTime);
-                        map.putDouble("duration", totalLength);
-                        eventEmitter.sendEvent(map, VideoEventEmitter.EVENT_PROGRESS);
-                    }
-                    mProgressUpdateHandler.postDelayed(mProgressUpdateRunnable, Math.round(mProgressUpdateInterval));    
+                    super.run();
+
+                    mProgressUpdateRunnable = () -> {
+                        if (mMediaPlayer != null && !isPaused) {
+                            long currentTime = 0;
+                            long totalLength = 0;
+                            WritableMap event = Arguments.createMap();
+                            boolean isPlaying = mMediaPlayer.isPlaying();
+                            currentTime = mMediaPlayer.getTime();
+                            float position = mMediaPlayer.getPosition();
+                            totalLength = mMediaPlayer.getLength();
+                            WritableMap map = Arguments.createMap();
+                            map.putBoolean("isPlaying", isPlaying);
+                            map.putDouble("position", position);
+                            map.putDouble("currentTime", currentTime);
+                            map.putDouble("duration", totalLength);
+                            eventEmitter.sendEvent(map, VideoEventEmitter.EVENT_PROGRESS);
+                        }
+
+                        mProgressUpdateHandler.postDelayed(mProgressUpdateRunnable, Math.round(mProgressUpdateInterval));
+                    };
+
+                    mProgressUpdateHandler.postDelayed(mProgressUpdateRunnable, 0);
                 }
-            };
-            mProgressUpdateHandler.postDelayed(mProgressUpdateRunnable,0);
-        }
-            
+            }.start();
+        }   
     }
 
 
@@ -338,15 +345,18 @@ class ReactVlcPlayerView extends TextureView implements
                 ArrayList options = initOptions.toArrayList();
                 for (int i = 0; i < options.size() - 1; i++) {
                     String option = (String) options.get(i);
+                    // Log.i("option:", "" + "option" + ":" + option);
                     cOptions.add(option);
                 }
             }
             // Create LibVLC
-            if (initType == 1) {
-                libvlc = new LibVLC(getContext());
-            } else {
-                libvlc = new LibVLC(getContext(), cOptions);
-            }
+            // Log.i("initType", "initType:" + initType);
+            // if (initType == 1) {
+            //     libvlc = new LibVLC(getContext(), cOptions);
+            // } else {
+                
+            // }
+            libvlc = new LibVLC(getContext(), cOptions);
             // Create media player
             mMediaPlayer = new MediaPlayer(libvlc);
             mMediaPlayer.setEventListener(mPlayerListener);
@@ -388,6 +398,7 @@ class ReactVlcPlayerView extends TextureView implements
                 }
             }
             mMediaPlayer.setMedia(m);
+            m.release();
             mMediaPlayer.setScale(0);
 
             if (!vlcOut.areViewsAttached()) {
