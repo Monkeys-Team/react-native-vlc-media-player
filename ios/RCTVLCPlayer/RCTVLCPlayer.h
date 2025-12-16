@@ -1,4 +1,4 @@
-#import "React/RCTView.h"
+#import <React/RCTView.h>
 
 @class RCTEventDispatcher;
 

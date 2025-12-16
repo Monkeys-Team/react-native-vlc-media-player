@@ -128,7 +128,8 @@ static NSString *const playbackRate = @"rate";
     _source = source;
     // [bavv edit start]
     NSString* uri    = [source objectForKey:@"uri"];
-    NSInteger* fontSize    = [source objectForKey:@"fontSize"];
+    NSNumber *fontSizeNumber = [source objectForKey:@"fontSize"];
+    NSInteger fontSize = [fontSizeNumber integerValue];    
     BOOL    autoplay = [RCTConvert BOOL:[source objectForKey:@"autoplay"]];
     NSURL* _uri    = [NSURL URLWithString:uri];
     NSDictionary* initOptions = [source objectForKey:@"initOptions"];
@@ -138,7 +139,7 @@ static NSString *const playbackRate = @"rate";
     _player.libraryInstance.debugLoggingLevel = 3;
     // [bavv edit end]
 
-    [_player performSelector:@selector(setTextRendererFontSize:) withObject:fontSize];    
+    [_player performSelector:@selector(setTextRendererFontSize:) withObject:fontSizeNumber];    
     [_player setDrawable:self];
     _player.delegate = self;
     _player.scaleFactor = 0;

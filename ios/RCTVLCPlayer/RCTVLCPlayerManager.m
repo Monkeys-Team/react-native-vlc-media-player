@@ -1,6 +1,6 @@
 #import "RCTVLCPlayerManager.h"
 #import "RCTVLCPlayer.h"
-#import "React/RCTBridge.h"
+#import <React/RCTBridge.h>
 
 @implementation RCTVLCPlayerManager
 
