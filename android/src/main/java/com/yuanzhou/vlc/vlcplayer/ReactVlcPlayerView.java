@@ -7,6 +7,7 @@ import android.media.AudioManager;
 import android.net.Uri;
 
 import android.os.Handler;
+import android.os.Looper;
 import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.Surface;
@@ -65,7 +66,7 @@ class ReactVlcPlayerView extends TextureView implements
     private boolean autoAspectRatio = false;
 
     private float mProgressUpdateInterval = 250;
-    private Handler mProgressUpdateHandler = new Handler();
+    private Handler mProgressUpdateHandler = new Handler(Looper.getMainLooper());
     private Runnable mProgressUpdateRunnable = null;
 
     private final ThemedReactContext themedReactContext;
@@ -83,6 +84,9 @@ class ReactVlcPlayerView extends TextureView implements
         this.setSurfaceTextureListener(this);
 
         this.addOnLayoutChangeListener(onLayoutChangeListener);
+        
+        // Register lifecycle event listener to handle app pause/resume
+        themedReactContext.addLifecycleEventListener(this);
     }
 
 
@@ -149,36 +153,44 @@ class ReactVlcPlayerView extends TextureView implements
     }
 
     private void setProgressUpdateRunnable() {
-        if (mMediaPlayer != null && mProgressUpdateInterval > 0){
-            new Thread() {
+        // Cancel any existing runnable to prevent memory leak
+        if (mProgressUpdateRunnable != null) {
+            mProgressUpdateHandler.removeCallbacks(mProgressUpdateRunnable);
+            mProgressUpdateRunnable = null;
+        }
+        
+        if (mMediaPlayer != null && mProgressUpdateInterval > 0) {
+            mProgressUpdateRunnable = new Runnable() {
                 @Override
                 public void run() {
-                    super.run();
-
-                    mProgressUpdateRunnable = () -> {
-                        if (mMediaPlayer != null && !isPaused) {
-                            long currentTime = 0;
-                            long totalLength = 0;
-                            WritableMap event = Arguments.createMap();
+                    // Null check to prevent crash during release
+                    if (mMediaPlayer != null && !isPaused) {
+                        try {
                             boolean isPlaying = mMediaPlayer.isPlaying();
-                            currentTime = mMediaPlayer.getTime();
+                            long currentTime = mMediaPlayer.getTime();
                             float position = mMediaPlayer.getPosition();
-                            totalLength = mMediaPlayer.getLength();
+                            long totalLength = mMediaPlayer.getLength();
                             WritableMap map = Arguments.createMap();
                             map.putBoolean("isPlaying", isPlaying);
                             map.putDouble("position", position);
                             map.putDouble("currentTime", currentTime);
                             map.putDouble("duration", totalLength);
                             eventEmitter.sendEvent(map, VideoEventEmitter.EVENT_PROGRESS);
+                        } catch (Exception e) {
+                            // Player may have been released during execution
+                            Log.w(TAG, "Error in progress update: " + e.getMessage());
                         }
-
+                    }
+                    
+                    // Only reschedule if player still exists
+                    if (mMediaPlayer != null && mProgressUpdateRunnable != null) {
                         mProgressUpdateHandler.postDelayed(mProgressUpdateRunnable, Math.round(mProgressUpdateInterval));
-                    };
-
-                    mProgressUpdateHandler.postDelayed(mProgressUpdateRunnable, 0);
+                    }
                 }
-            }.start();
-        }   
+            };
+            
+            mProgressUpdateHandler.postDelayed(mProgressUpdateRunnable, 0);
+        }
     }
 
 
@@ -213,10 +225,23 @@ class ReactVlcPlayerView extends TextureView implements
 
         @Override
         public void onEvent(MediaPlayer.Event event) {
-            boolean isPlaying = mMediaPlayer.isPlaying();
-            currentTime = mMediaPlayer.getTime();
-            float position = mMediaPlayer.getPosition();
-            totalLength = mMediaPlayer.getLength();
+            // Null check to prevent crash during release
+            if (mMediaPlayer == null) {
+                return;
+            }
+            
+            boolean isPlaying = false;
+            float position = 0;
+            try {
+                isPlaying = mMediaPlayer.isPlaying();
+                currentTime = mMediaPlayer.getTime();
+                position = mMediaPlayer.getPosition();
+                totalLength = mMediaPlayer.getLength();
+            } catch (Exception e) {
+                Log.w(TAG, "Error getting player state: " + e.getMessage());
+                return;
+            }
+            
             WritableMap map = Arguments.createMap();
             map.putBoolean("isPlaying", isPlaying);
             map.putDouble("position", position);
@@ -329,6 +354,11 @@ class ReactVlcPlayerView extends TextureView implements
         if (this.getSurfaceTexture() == null) {
             return;
         }
+        // Null check for srcMap to prevent NullPointerException
+        if (srcMap == null) {
+            Log.w(TAG, "srcMap is null, cannot create player");
+            return;
+        }
         try {
             final ArrayList<String> cOptions = new ArrayList<>();
             String uriString = srcMap.hasKey("uri") ? srcMap.getString("uri") : null;
@@ -434,16 +464,31 @@ class ReactVlcPlayerView extends TextureView implements
     private void releasePlayer() {
         if (libvlc == null)
             return;
-        mMediaPlayer.stop();
-        final IVLCVout vout = mMediaPlayer.getVLCVout();
-        vout.removeCallback(callback);
-        vout.detachViews();
+        
+        // Cancel progress updates first
+        if (mProgressUpdateRunnable != null) {
+            mProgressUpdateHandler.removeCallbacks(mProgressUpdateRunnable);
+            mProgressUpdateRunnable = null;
+        }
+        
+        if (mMediaPlayer != null) {
+            // Remove event listener to prevent callbacks during release
+            mMediaPlayer.setEventListener(null);
+            
+            mMediaPlayer.stop();
+            
+            final IVLCVout vout = mMediaPlayer.getVLCVout();
+            vout.removeCallback(callback);
+            vout.detachViews();
+            
+            // Release MediaPlayer to prevent memory leak (libVLC Issue #580, #1257)
+            mMediaPlayer.release();
+            mMediaPlayer = null;
+        }
+        
         //surfaceView.removeOnLayoutChangeListener(onLayoutChangeListener);
         libvlc.release();
         libvlc = null;
-        if(mProgressUpdateRunnable!=null){
-            mProgressUpdateHandler.removeCallbacks(mProgressUpdateRunnable);
-        }
     }
 
     /**
@@ -593,6 +638,8 @@ class ReactVlcPlayerView extends TextureView implements
         if (surfaceView != null) {
             surfaceView.removeOnLayoutChangeListener(onLayoutChangeListener);
         }
+        // Remove lifecycle listener to prevent memory leak
+        themedReactContext.removeLifecycleEventListener(this);
         stopPlayback();
     }
 

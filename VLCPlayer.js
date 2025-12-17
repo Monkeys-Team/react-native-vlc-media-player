@@ -9,6 +9,7 @@ import resolveAssetSource from "react-native/Libraries/Image/resolveAssetSource"
 export default class VLCPlayer extends Component {
   constructor(props, context) {
     super(props, context);
+    this._root = null;
     this.seek = this.seek.bind(this);
     this.delay = this.delay.bind(this);
     this.resume = this.resume.bind(this);
@@ -32,6 +33,11 @@ export default class VLCPlayer extends Component {
     this._onVideoSubtitles = this._onVideoSubtitles.bind(this);
     this.videoSubtitleIndex = this.videoSubtitleIndex.bind(this);
     this.setVideoSubtitleSlave = this.setVideoSubtitleSlave.bind(this);
+  }
+
+  componentWillUnmount() {
+    // Clean up ref to prevent memory leak
+    this._root = null;
   }
   static defaultProps = {
     autoplay: true,
@@ -187,9 +193,15 @@ export default class VLCPlayer extends Component {
     }
     source.isNetwork = isNetwork;
     source.autoplay = this.props.autoplay;
-    source.initOptions = source.initOptions || [];
-    //repeat the input media
-    source.initOptions.push("--input-repeat=1000");
+    
+    // Use a copy of initOptions to avoid mutating the original and prevent memory leak
+    // from repeatedly pushing the same option on every render
+    const initOptions = source.initOptions ? [...source.initOptions] : [];
+    // Only add input-repeat if not already present
+    if (!initOptions.some(opt => opt.includes("--input-repeat"))) {
+      initOptions.push("--input-repeat=1000");
+    }
+    source.initOptions = initOptions;
     const nativeProps = Object.assign({}, this.props);
     Object.assign(nativeProps, {
       style: [styles.base, nativeProps.style],

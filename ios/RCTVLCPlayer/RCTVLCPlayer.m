@@ -90,22 +90,29 @@ static NSString *const playbackRate = @"rate";
 
 -(void)setResume:(BOOL)autoplay
 {
-    if(_player){
-        [self _release];
-    }
     // [bavv edit start]
     NSString* uri    = [_source objectForKey:@"uri"];
     NSURL* _uri    = [NSURL URLWithString:uri];
     NSDictionary* initOptions = [_source objectForKey:@"initOptions"];
     NSNumber* fontSize    = [_source objectForKey:@"fontSize"];
 
-    _player = [[VLCMediaPlayer alloc] init];
+    // Reuse existing player if available, only change media
+    if(_player){
+        // Release old media first
+        _player.media = nil;
+    } else {
+        _player = [[VLCMediaPlayer alloc] init];
+        [_player performSelector:@selector(setTextRendererFontSize:) withObject:fontSize];
+        
+        // Ensure drawable is set on main thread
+        dispatch_async(dispatch_get_main_queue(), ^{
+            [self->_player setDrawable:self];
+        });
+        _player.delegate = self;
+        _player.scaleFactor = 0;
+    }
 	// [bavv edit end]
 
-    [_player performSelector:@selector(setTextRendererFontSize:) withObject:fontSize];    
-    [_player setDrawable:self];
-    _player.delegate = self;
-    _player.scaleFactor = 0;
     VLCMedia *media = [VLCMedia mediaWithURL:_uri];
 
     for (NSString* option in initOptions) {
@@ -113,7 +120,13 @@ static NSString *const playbackRate = @"rate";
     }
 
     _player.media = media;
-    [[AVAudioSession sharedInstance] setActive:NO withOptions:AVAudioSessionSetActiveOptionNotifyOthersOnDeactivation error:nil];
+    
+    NSError *audioError = nil;
+    [[AVAudioSession sharedInstance] setActive:NO withOptions:AVAudioSessionSetActiveOptionNotifyOthersOnDeactivation error:&audioError];
+    if (audioError) {
+        NSLog(@"AVAudioSession error: %@", audioError);
+    }
+    
     NSLog(@"autoplay: %i",autoplay);
     self.onVideoLoadStart(@{
                             @"target": self.reactTag
@@ -122,9 +135,6 @@ static NSString *const playbackRate = @"rate";
 
 -(void)setSource:(NSDictionary *)source
 {
-    if(_player){
-        [self _release];
-    }
     _source = source;
     // [bavv edit start]
     NSString* uri    = [source objectForKey:@"uri"];
@@ -134,15 +144,25 @@ static NSString *const playbackRate = @"rate";
     NSURL* _uri    = [NSURL URLWithString:uri];
     NSDictionary* initOptions = [source objectForKey:@"initOptions"];
 
-    _player = [[VLCMediaPlayer alloc] init];
-    _player.libraryInstance.debugLogging = true;
-    _player.libraryInstance.debugLoggingLevel = 3;
-    // [bavv edit end]
+    // Reuse existing player if available, only change media (prevents memory leak)
+    if(_player){
+        // Release old media first
+        _player.media = nil;
+    } else {
+        _player = [[VLCMediaPlayer alloc] init];
+        _player.libraryInstance.debugLogging = true;
+        _player.libraryInstance.debugLoggingLevel = 3;
+        // [bavv edit end]
 
-    [_player performSelector:@selector(setTextRendererFontSize:) withObject:fontSizeNumber];    
-    [_player setDrawable:self];
-    _player.delegate = self;
-    _player.scaleFactor = 0;
+        [_player performSelector:@selector(setTextRendererFontSize:) withObject:fontSizeNumber];
+        
+        // Ensure drawable is set on main thread for thread safety
+        dispatch_async(dispatch_get_main_queue(), ^{
+            [self->_player setDrawable:self];
+        });
+        _player.delegate = self;
+        _player.scaleFactor = 0;
+    }
 
     VLCMedia *media = [VLCMedia mediaWithURL:_uri];
 
@@ -151,7 +171,12 @@ static NSString *const playbackRate = @"rate";
     }
 
     _player.media = media;
-    [[AVAudioSession sharedInstance] setActive:NO withOptions:AVAudioSessionSetActiveOptionNotifyOthersOnDeactivation error:nil];
+    
+    NSError *audioError = nil;
+    [[AVAudioSession sharedInstance] setActive:NO withOptions:AVAudioSessionSetActiveOptionNotifyOthersOnDeactivation error:&audioError];
+    if (audioError) {
+        NSLog(@"AVAudioSession error: %@", audioError);
+    }
     
     self.onVideoLoadStart(@{
                            @"target": self.reactTag
@@ -258,9 +283,9 @@ static NSString *const playbackRate = @"rate";
                 break;
             case VLCMediaPlayerStateError:
                 NSLog(@"VLCMediaPlayerStateError %i",1);
-//                self.onVideoError(@{
-//                                    @"target": self.reactTag
-//                                    });
+                self.onVideoError(@{
+                                    @"target": self.reactTag
+                                    });
                 [self _release];
                 break;
             default:
@@ -375,12 +400,28 @@ static NSString *const playbackRate = @"rate";
 - (void)_release
 {
     if(_player){
+        // Remove delegate first to prevent callbacks during teardown
+        _player.delegate = nil;
+        
         [_player pause];
         [_player stop];
+        
+        // Clear drawable to prevent crash when view is deallocated
+        [_player setDrawable:nil];
+        
+        // Release media to prevent VLCKit memory leak (Issue #376)
+        _player.media = nil;
+        
         _player = nil;
         _eventDispatcher = nil;
         [[NSNotificationCenter defaultCenter] removeObserver:self];
     }
+}
+
+- (void)dealloc
+{
+    [[NSNotificationCenter defaultCenter] removeObserver:self];
+    [self _release];
 }
 
 
